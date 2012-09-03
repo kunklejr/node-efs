@@ -1,0 +1,27 @@
+{
+  "name": "efs",
+  "version": "0.0.0",
+  "description": "An fs  module stand-in for reading and writing encrypted files",
+  "main": "./efs.js",
+  "scripts": {
+    "test": "mkdir -p temp; vows"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kunklejr/node-efs.git"
+  },
+  "keywords": [
+    "fs",
+    "filesystem",
+    "crypto",
+    "encrypt",
+    "decrypt"
+  ],
+  "author": "Jeff Kunkle",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "vows": "~0.6.3"
+  }
+}
