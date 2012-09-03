@@ -89,6 +89,19 @@ exports.init = function (algorithm, password) {
     return fs.writeSync(fd, data, 0, data.length, null);
   }
 
+  efs.read = function() {
+    var err = new Error('unsupported operation');
+    if (typeof arguments[arguments.length - 1] === 'function') {
+      arguments[arguments.length - 1](err);
+    } else {
+      throw err;
+    }
+  }
+
+  efs.readSync = function() {
+    throw new Error('unsupported operation');
+  }
+
   efs.writeFile = function (filename, data, encoding_, callback) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
     var callback_ = arguments[arguments.length - 1];

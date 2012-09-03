@@ -177,6 +177,28 @@ vows.describe('efs').addBatch({
       efs.unlink(openWriteClosePathSync, this.callback);
     }
   },
+
+  '#read': {
+    topic: function () {
+      efs.read(this.callback);
+    },
+
+    'should return an error': function (err) {
+      assert.isNotNull(err);
+    }
+  },
+
+  '#read without callback': {
+    'throws an error': function () {
+      assert.throws(efs.read);
+    }
+  },
+
+  '#readSync': {
+    'throws an error': function () {
+      assert.throws(efs.readSync);
+    }
+  }
 }).export(module);
 
 function ticks(num, func) {
