@@ -183,7 +183,7 @@ vows.describe('efs').addBatch({
       efs.read(this.callback);
     },
 
-    'should return an error': function (err) {
+    'should return an error': function (err, bytes) {
       assert.isNotNull(err);
     }
   },

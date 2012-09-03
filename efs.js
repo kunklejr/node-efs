@@ -71,7 +71,7 @@ exports.init = function (algorithm, password) {
 
   efs.write = function (fd, buffer, offset, length, position, callback) {
     if (position !== null) {
-      throw new Error('Writing to arbitrary positions in the file is not supported.');
+      throw new Error('[node-efs] Writing to arbitrary positions in the file is not supported.');
     }
 
     var slice = buffer.slice(offset, offset + length);
@@ -81,7 +81,7 @@ exports.init = function (algorithm, password) {
 
   efs.writeSync = function (fd, buffer, offset, length, position) {
     if (position !== null) {
-      throw new Error('Writing to arbitrary positions in the file is not supported.');
+      throw new Error('[node-efs] Writing to arbitrary positions in the file is not supported.');
     }
 
     var slice = buffer.slice(offset, offset + length);
@@ -90,7 +90,7 @@ exports.init = function (algorithm, password) {
   }
 
   efs.read = function() {
-    var err = new Error('unsupported operation');
+    var err = new Error('[node-efs] efs.read is an unsupported operation');
     if (typeof arguments[arguments.length - 1] === 'function') {
       arguments[arguments.length - 1](err);
     } else {
@@ -99,7 +99,7 @@ exports.init = function (algorithm, password) {
   }
 
   efs.readSync = function() {
-    throw new Error('unsupported operation');
+    throw new Error('[node-efs] efs.readSync is an unsupported operation');
   }
 
   efs.writeFile = function (filename, data, encoding_, callback) {
@@ -121,14 +121,6 @@ exports.init = function (algorithm, password) {
     var cipher = crypto.createCipher(algorithm, password);
     var cipherText = cipher.update(data, encoding) + cipher.final();
     return fs.writeFileSync(filename, cipherText, 'binary');
-  }
-
-  efs.read = function (fd, buffer, offset, length, position, callback) {
-    throw new Error('Unsupported Operation');
-  }
-
-  efs.readSync = function (fd, buffer, offset, length, position) {
-    throw new Error('Unsupported Operation');
   }
 
   efs.readFile = function (filename, encoding_, callback) {
@@ -160,11 +152,11 @@ exports.init = function (algorithm, password) {
   }
 
   efs.appendFile = function (filename, data, encoding_, callback) {
-    throw new Error('not yet implemented');
+    throw new Error('[node-efs] efs.appendFile not yet implemented');
   }
 
   efs.appendFileSync = function (filename, data, encoding) {
-    throw new Error('not yet implemented');
+    throw new Error('[node-efs] efs.appendFileSync not yet implemented');
   }
 
   efs.createReadStream = function (path, options) {
@@ -184,7 +176,7 @@ exports.init = function (algorithm, password) {
   }
 
   efs.createWriteStream = function (path, options) {
-    throw new Error('not yet implemented');
+    throw new Error('[node-efs] efs.createWriteStream not yet implemented');
   }
 
   return efs;
