@@ -10,6 +10,10 @@ exports.init = function (algorithm, password) {
   var efs = copy(fs);
 
   efs.open = function (path, flags, mode, callback) {
+    if (flags.indexOf('w') !== 0) {
+      return callback(new Error('[node-efs] does not support open for read operations'));
+    }
+
     var args = copyArgs(arguments);
 
     if (typeof args[args.length - 1] === 'function') {
@@ -27,22 +31,14 @@ exports.init = function (algorithm, password) {
         return callback(err);
       }
 
-      if (flags.indexOf('r') === 0) {
-        fdCache[fd] = { cipher: crypto.createDecipher(algorithm, password), mode: 'decrypt' };
-      } else {
-        fdCache[fd] = { cipher: crypto.createCipher(algorithm, password), mode: 'encrypt' };
-      }
-
+      fdCache[fd] = crypto.createCipher(algorithm, password);
       callback(null, fd);
     }
   }
 
   efs.close = function (fd, callback) {
-    var data = new Buffer(fdCache[fd].cipher.final('binary'), 'binary');
-
-    if (fdCache[fd].mode === 'encrypt') {
-      fs.write(fd, data, 0, data.length, null, onFinalize);
-    }
+    var data = new Buffer(fdCache[fd].final('binary'), 'binary');
+    fs.write(fd, data, 0, data.length, null, onFinalize);
 
     function onFinalize(err) {
       if (err) {
@@ -54,24 +50,19 @@ exports.init = function (algorithm, password) {
   }
 
   efs.openSync = function (path, flags, mode) {
-    var fd = fs.openSync(path, flags, mode);
-
-    if (flags.indexOf('r') === 0) {
-      fdCache[fd] = { cipher: crypto.createDecipher(algorithm, password), mode: 'decrypt' };
-    } else {
-      fdCache[fd] = { cipher: crypto.createCipher(algorithm, password), mode: 'encrypt' };
+    if (flags.indexOf('w') !== 0) {
+      return callback(new Error('[node-efs] does not support open for read operations'));
     }
+
+    var fd = fs.openSync(path, flags, mode);
+    fdCache[fd] = crypto.createCipher(algorithm, password);
 
     return fd;
   }
 
   efs.closeSync = function (fd) {
-    var data = new Buffer(fdCache[fd].cipher.final('binary'), 'binary');
-
-    if (fdCache[fd].mode === 'encrypt') {
-      fs.writeSync(fd, data, 0, data.length, null);
-    }
-
+    var data = new Buffer(fdCache[fd].final('binary'), 'binary');
+    fs.writeSync(fd, data, 0, data.length, null);
     var retVal = fs.closeSync(fd);
     delete fdCache[fd];
 
@@ -84,7 +75,7 @@ exports.init = function (algorithm, password) {
     }
 
     var slice = buffer.slice(offset, offset + length);
-    var data = new Buffer(fdCache[fd].cipher.update(slice, 'binary', 'binary'), 'binary');
+    var data = new Buffer(fdCache[fd].update(slice, 'binary', 'binary'), 'binary');
     fs.write(fd, data, 0, data.length, null, callback);
   }
 
@@ -94,7 +85,7 @@ exports.init = function (algorithm, password) {
     }
 
     var slice = buffer.slice(offset, offset + length);
-    var data = new Buffer(fdCache[fd].cipher.update(slice, 'binary', 'binary'), 'binary');
+    var data = new Buffer(fdCache[fd].update(slice, 'binary', 'binary'), 'binary');
     return fs.writeSync(fd, data, 0, data.length, null);
   }
 
