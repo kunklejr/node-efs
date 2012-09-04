@@ -25,7 +25,7 @@ CryptoStream.prototype.end = function(data) {
 }
 
 function coearseOpts (opts) {
-  return 'string' == typeof(opts) ? {key: opts, algorithm: 'aes-256-cbc'} : opts
+  return 'string' == typeof(opts) ? { key: opts, algorithm: 'aes-256-cbc' } : opts
 }
 var EncryptStream = function(opts) {
   opts = coearseOpts(opts)

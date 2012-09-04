@@ -34,7 +34,7 @@ exports.init = function (algorithm, password) {
       fdCache[fd] = crypto.createCipher(algorithm, password);
       callback(null, fd);
     }
-  }
+  };
 
   efs.close = function (fd, callback) {
     var data = new Buffer(fdCache[fd].final('binary'), 'binary');
@@ -47,7 +47,7 @@ exports.init = function (algorithm, password) {
       fs.close(fd, callback);
       delete fdCache[fd];
     }
-  }
+  };
 
   efs.openSync = function (path, flags, mode) {
     if (flags.indexOf('w') !== 0) {
@@ -58,7 +58,7 @@ exports.init = function (algorithm, password) {
     fdCache[fd] = crypto.createCipher(algorithm, password);
 
     return fd;
-  }
+  };
 
   efs.closeSync = function (fd) {
     var data = new Buffer(fdCache[fd].final('binary'), 'binary');
@@ -67,7 +67,7 @@ exports.init = function (algorithm, password) {
     delete fdCache[fd];
 
     return retVal;
-  }
+  };
 
   efs.write = function (fd, buffer, offset, length, position, callback) {
     if (position !== null) {
@@ -77,7 +77,7 @@ exports.init = function (algorithm, password) {
     var slice = buffer.slice(offset, offset + length);
     var data = new Buffer(fdCache[fd].update(slice, 'binary', 'binary'), 'binary');
     fs.write(fd, data, 0, data.length, null, callback);
-  }
+  };
 
   efs.writeSync = function (fd, buffer, offset, length, position) {
     if (position !== null) {
@@ -87,20 +87,21 @@ exports.init = function (algorithm, password) {
     var slice = buffer.slice(offset, offset + length);
     var data = new Buffer(fdCache[fd].update(slice, 'binary', 'binary'), 'binary');
     return fs.writeSync(fd, data, 0, data.length, null);
-  }
+  };
 
   efs.read = function() {
     var err = new Error('[node-efs] efs.read is an unsupported operation');
+
     if (typeof arguments[arguments.length - 1] === 'function') {
       arguments[arguments.length - 1](err);
     } else {
       throw err;
     }
-  }
+  };
 
   efs.readSync = function() {
     throw new Error('[node-efs] efs.readSync is an unsupported operation');
-  }
+  };
 
   efs.writeFile = function (filename, data, encoding_, callback) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
@@ -114,14 +115,14 @@ exports.init = function (algorithm, password) {
     } catch (ex) {
       callback(ex);
     }
-  }
+  };
 
   efs.writeFileSync = function (filename, data, encoding) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
     var cipher = crypto.createCipher(algorithm, password);
     var cipherText = cipher.update(data, encoding) + cipher.final();
     return fs.writeFileSync(filename, cipherText, 'binary');
-  }
+  };
 
   efs.readFile = function (filename, encoding_, callback) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
@@ -141,7 +142,7 @@ exports.init = function (algorithm, password) {
         callback(ex);
       }
     });
-  }
+  };
 
   efs.readFileSync = function (filename, encoding_) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
@@ -149,15 +150,15 @@ exports.init = function (algorithm, password) {
     var cipherText = fs.readFileSync(filename, 'binary');
     var plainText = cipher.update(cipherText, 'binary', encoding) + cipher.final(encoding);
     return plainText;
-  }
+  };
 
   efs.appendFile = function (filename, data, encoding_, callback) {
     throw new Error('[node-efs] efs.appendFile not yet implemented');
-  }
+  };
 
   efs.appendFileSync = function (filename, data, encoding) {
     throw new Error('[node-efs] efs.appendFileSync not yet implemented');
-  }
+  };
 
   efs.createReadStream = function (path, options) {
     options = options || {};
@@ -173,11 +174,33 @@ exports.init = function (algorithm, password) {
     });
 
     return fstream.pipe(cstream);
-  }
+  };
 
   efs.createWriteStream = function (path, options) {
-    throw new Error('[node-efs] efs.createWriteStream not yet implemented');
-  }
+    options = options || {};
+    var cipher = crypto.createCipher(algorithm, password);
+
+    var encoding = typeof(options.encoding) == 'string' ? options.encoding : 'utf8';
+    options.encoding = 'binary';
+
+    var fstream = fs.createWriteStream(path, options);
+    fstream.efsWrite = fstream.write;
+    fstream.efsEnd = fstream.end;
+
+    fstream.write = function (data, encoding, fd) {
+      this.efsWrite(cipher.update(data, encoding, 'binary'), 'binary', fd);
+    };
+
+    fstream.end = function (data, encoding) {
+      if (data) {
+        this.efsWrite(cipher.update(data, encoding, 'binary'), 'binary');
+      }
+      this.efsWrite(cipher.final(), 'binary');
+      this.efsEnd();
+    };
+
+    return fstream;
+  };
 
   return efs;
 };

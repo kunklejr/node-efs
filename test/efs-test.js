@@ -110,22 +110,22 @@ vows.describe('efs').addBatch({
     }
   },
 
-  //'#createWriteStream': {
-    //topic: function () {
-      //var efstream = efs.createWriteStream(writeStreamPath);
-      //efstream.on('end', efs.readFile.bind(this, writeStreamPath, this.callback));
-      //efstream.write('hello world');
-      //efstream.end();
-    //},
+  '#createWriteStream': {
+    topic: function () {
+      var efstream = efs.createWriteStream(writeStreamPath);
+      efstream.write('hello world');
+      efstream.end();
+      process.nextTick(efs.readFile.bind(this, writeStreamPath, 'utf8', this.callback));
+    },
 
-    //'should encrypt the contents': function (data) {
-      //assert.equal(data, 'hello world');
-    //},
+    'should encrypt the contents': function (data) {
+      assert.equal(data, 'hello world');
+    },
 
-    //teardown: function() {
-      //efs.unlink(writeStreamPath, this.callback);
-    //}
-  //}
+    teardown: function() {
+      efs.unlink(writeStreamPath, this.callback);
+    }
+  },
 
   '#open / #write / #close': {
     topic: function () {
