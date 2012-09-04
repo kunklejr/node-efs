@@ -117,7 +117,7 @@ exports.init = function (algorithm, password) {
     }
   };
 
-  efs.writeFileSync = function (filename, data, encoding) {
+  efs.writeFileSync = function (filename, data, encoding_) {
     var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
     var cipher = crypto.createCipher(algorithm, password);
     var cipherText = cipher.update(data, encoding) + cipher.final();
@@ -144,20 +144,34 @@ exports.init = function (algorithm, password) {
     });
   };
 
-  efs.readFileSync = function (filename, encoding_) {
-    var encoding = typeof(encoding_) == 'string' ? encoding_ : 'utf8';
+  efs.readFileSync = function (filename, encoding) {
+    encoding = typeof(encoding) === 'string' ? encoding : 'utf8';
     var cipher = crypto.createDecipher(algorithm, password);
     var cipherText = fs.readFileSync(filename, 'binary');
-    var plainText = cipher.update(cipherText, 'binary', encoding) + cipher.final(encoding);
-    return plainText;
+    return cipher.update(cipherText, 'binary', encoding) + cipher.final(encoding);
   };
 
-  efs.appendFile = function (filename, data, encoding_, callback) {
-    throw new Error('[node-efs] efs.appendFile not yet implemented');
+  efs.appendFile = function (filename, data, encoding, callback) {
+    if (typeof arguments[arguments.length - 1] === 'function') {
+      callback = arguments[arguments.length - 1];
+    } else {
+      callback = function () {};
+    }
+    if (typeof arguments[2] !== 'string') {
+      encoding = 'utf8';
+    }
+
+    efs.readFile(filename, encoding, onRead);
+
+    function onRead(err, plainText) {
+      if (err) return callback(err);
+      efs.writeFile(filename, plainText + data, encoding, callback);
+    }
   };
 
   efs.appendFileSync = function (filename, data, encoding) {
-    throw new Error('[node-efs] efs.appendFileSync not yet implemented');
+    var plainText = efs.readFileSync(filename, encoding);
+    return efs.writeFileSync(filename, plainText + data, encoding);
   };
 
   efs.createReadStream = function (path, options) {

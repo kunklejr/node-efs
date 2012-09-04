@@ -11,6 +11,8 @@ var readStreamPath = path.join(tmpdir, 'readStream.txt');
 var writeStreamPath = path.join(tmpdir, 'writeStream.txt');
 var openWriteClosePath = path.join(tmpdir, 'openWriteClose.txt');
 var openWriteClosePathSync = path.join(tmpdir, 'openWriteCloseSync.txt');
+var appendFilePath = path.join(tmpdir, 'appendFile.txt');
+var appendFileSyncPath = path.join(tmpdir, 'appendFileSync.txt');
 
 vows.describe('efs').addBatch({
   '#writeFile': {
@@ -198,7 +200,45 @@ vows.describe('efs').addBatch({
     'throws an error': function () {
       assert.throws(efs.readSync);
     }
-  }
+  },
+
+  '#appendFile': {
+    topic: function () {
+      var onAppend = function (err) {
+        if (err) {
+          return this.callback(err);
+        }
+        process.nextTick(efs.readFile.bind(this, appendFilePath, this.callback));
+      }.bind(this)
+
+      efs.writeFileSync(appendFilePath, 'hello');
+      efs.appendFile(appendFilePath, ' world', onAppend);
+    },
+
+    'should properly append to encrypted file': function (data) {
+      assert.equal(data, 'hello world');
+    },
+
+    teardown: function() {
+      efs.unlink(appendFilePath, this.callback);
+    }
+  },
+
+  '#appendFileSync': {
+    topic: function () {
+      efs.writeFileSync(appendFileSyncPath, 'hello');
+      efs.appendFileSync(appendFileSyncPath, ' world');
+      efs.readFile(appendFileSyncPath, this.callback);
+    },
+
+    'should properly append to encrypted file': function (data) {
+      assert.equal(data, 'hello world');
+    },
+
+    teardown: function() {
+      efs.unlink(appendFileSyncPath, this.callback);
+    }
+  },
 }).export(module);
 
 function ticks(num, func) {
