@@ -11,7 +11,7 @@ exports.init = function (algorithm, password) {
 
   efs.open = function (path, flags, mode, callback) {
     if (flags.indexOf('w') !== 0) {
-      return callback(new Error('[node-efs] does not support open for read operations'));
+      return callback(new Error('[node-efs] only supports open for write operations'));
     }
 
     var args = copyArgs(arguments);
@@ -51,7 +51,7 @@ exports.init = function (algorithm, password) {
 
   efs.openSync = function (path, flags, mode) {
     if (flags.indexOf('w') !== 0) {
-      return callback(new Error('[node-efs] does not support open for read operations'));
+      return callback(new Error('[node-efs] only supports open for write operations'));
     }
 
     var fd = fs.openSync(path, flags, mode);
@@ -214,6 +214,26 @@ exports.init = function (algorithm, password) {
     };
 
     return fstream;
+  };
+
+  efs.truncate = function () {
+    var err = new Error('[node-efs] efs.truncate is an unsupported operation');
+
+    if (typeof arguments[arguments.length - 1] === 'function') {
+      arguments[arguments.length - 1](err);
+    } else {
+      throw err;
+    }
+  };
+
+  efs.truncateSync = function () {
+    var err = new Error('[node-efs] efs.truncateSync is an unsupported operation');
+
+    if (typeof arguments[arguments.length - 1] === 'function') {
+      arguments[arguments.length - 1](err);
+    } else {
+      throw err;
+    }
   };
 
   return efs;

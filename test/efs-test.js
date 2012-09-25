@@ -239,6 +239,28 @@ vows.describe('efs').addBatch({
       efs.unlink(appendFileSyncPath, this.callback);
     }
   },
+
+  '#truncate': {
+    topic: function () {
+      efs.truncate(this.callback);
+    },
+
+    'should return an error': function (err, success) {
+      assert.isNotNull(err);
+    }
+  },
+
+  '#truncate without callback': {
+    'throws an error': function () {
+      assert.throws(efs.truncate);
+    }
+  },
+
+  '#truncateSync': {
+    'throws an error': function () {
+      assert.throws(efs.truncateSync);
+    }
+  }
 }).export(module);
 
 function ticks(num, func) {
