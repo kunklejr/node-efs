@@ -62,6 +62,7 @@ describe('efs', function() {
       efs.readFile(readFilePath, function(err, data) {
 				assert.isNull(err);
 				assert.equal(data, 'hello world');
+				done();
 			});
 		});
 
@@ -73,7 +74,7 @@ describe('efs', function() {
 	describe('#readFileSync', function() {
 		it('should decrypt the file contents', function() {
       efs.writeFileSync(readFilePath, 'hello world');
-      var contents = efs.readFileSync(readFilePath);
+      var data = efs.readFileSync(readFilePath);
       assert.equal(data, 'hello world');
 		});
 
