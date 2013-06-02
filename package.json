@@ -5,7 +5,7 @@
   "description": "An fs module stand-in for reading and writing encrypted files",
   "main": "./efs.js",
   "scripts": {
-    "test": "mkdir -p temp; vows"
+    "test": "mkdir -p temp; mocha"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "vows": "~0.6.3"
+    "mocha": "~1.9.0",
+		"chai": "~1.6.0"
   }
 }

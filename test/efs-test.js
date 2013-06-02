@@ -1,7 +1,6 @@
 var fs = require('fs');
 var path = require('path');
-var vows = require('vows');
-var assert = require('assert');
+var assert = require('chai').assert;
 var efs = require('../efs').init('aes-128-cbc', 'password');
 var tmpdir = path.join(__dirname, '..', 'temp');
 
@@ -14,83 +13,77 @@ var openWriteClosePathSync = path.join(tmpdir, 'openWriteCloseSync.txt');
 var appendFilePath = path.join(tmpdir, 'appendFile.txt');
 var appendFileSyncPath = path.join(tmpdir, 'appendFileSync.txt');
 
-vows.describe('efs').addBatch({
-  '#writeFile': {
-    topic: function () {
-      efs.writeFile(writeFilePath, 'hello world', this.callback);
-    },
+describe('efs', function() {
+	describe('#writeFile', function() {
+		it('should encrypt the file contents', function(done) {
+      efs.writeFile(writeFilePath, 'hello world', function(err) {
+				assert.isNull(err);
+				var content = fs.readFileSync(writeFilePath);
+				assert.notEqual(content.toString(), 'hello world');
+				done();
+			});
+		});
 
-    'should encrypt the file contents': function(err) {
-      assert.isUndefined(err);
-      var content = fs.readFileSync(writeFilePath);
-      assert.notEqual(content.toString(), 'hello world');
-    },
+		it('should create output that is able to be decrypted', function(done) {
+      efs.writeFile(writeFilePath, 'hello world', function(err) {
+				assert.isNull(err);
+				var content = efs.readFileSync(writeFilePath);
+				assert.equal(content, 'hello world');
+				done();
+			});
+		});
 
-    'should create output that is able to be decrypted': function () {
-      var content = efs.readFileSync(writeFilePath);
-      assert.equal(content, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(writeFilePath, done);
+		})
+	});
 
-    teardown: function() {
-      efs.unlink(writeFilePath, this.callback);
-    }
-  },
-
-  '#writeFileSync': {
-    topic: function () {
+	describe('#writeFileSync', function() {
+		it('should encrypt the file contents', function() {
       efs.writeFileSync(writeFilePath, 'hello world');
-      this.callback();
-    },
-
-    'should encrypt the file contents': function() {
       var content = fs.readFileSync(writeFilePath);
       assert.notEqual(content.toString(), 'hello world');
-    },
+		});
 
-    'should create output that is able to be decrypted': function () {
+    it('should create output that is able to be decrypted', function () {
+      efs.writeFileSync(writeFilePath, 'hello world');
       var content = efs.readFileSync(writeFilePath);
       assert.equal(content, 'hello world');
-    },
+    });
 
-    teardown: function() {
-      efs.unlink(writeFilePath, this.callback);
-    }
-  },
+		afterEach(function(done) {
+      efs.unlink(writeFilePath, done);
+		})
+	});
 
-  '#readFile': {
-    topic: function () {
+	describe('#readFile', function() {
+		it('should decrypt the file contents', function(done) {
       efs.writeFileSync(readFilePath, 'hello world');
-      efs.readFile(readFilePath, this.callback);
-    },
+      efs.readFile(readFilePath, function(err, data) {
+				assert.isNull(err);
+				assert.equal(data, 'hello world');
+			});
+		});
 
-    'should decrypt the file contents': function (err, data) {
-      assert.isNull(err);
-      assert.equal(data, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(readFilePath, done);
+		})
+	});
 
-    teardown: function() {
-      efs.unlink(readFilePath, this.callback);
-    }
-  },
-
-  '#readFileSync': {
-    topic: function () {
+	describe('#readFileSync', function() {
+		it('should decrypt the file contents', function() {
       efs.writeFileSync(readFilePath, 'hello world');
       var contents = efs.readFileSync(readFilePath);
-      this.callback(null, contents);
-    },
-
-    'should decrypt the file contents': function (data) {
       assert.equal(data, 'hello world');
-    },
+		});
 
-    teardown: function() {
-      efs.unlink(readFilePath, this.callback);
-    }
-  },
+		afterEach(function(done) {
+      efs.unlink(readFilePath, done);
+		})
+	});
 
-  '#createReadStream': {
-    topic: function () {
+	describe('#createReadStream', function() {
+		it('should decrypt the contents', function(done) {
       efs.writeFileSync(readStreamPath, 'hello world');
       var str = '';
       var efstream = efs.createReadStream(readStreamPath);
@@ -98,175 +91,158 @@ vows.describe('efs').addBatch({
         str = str + data;
       });
       efstream.on('end', function () {
-        this.callback(null, str);
-      }.bind(this));
-      efstream.on('error', this.callback);
-    },
+				assert.equal(str, 'hello world');
+				done();
+      });
+      efstream.on('error', done.bind(null, new Error()));
+		});
 
-    'should decrypt the contents': function (data) {
-      assert.equal(data, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(readStreamPath, done);
+		});
+	});
 
-    teardown: function() {
-      efs.unlink(readStreamPath, this.callback);
-    }
-  },
-
-  '#createWriteStream': {
-    topic: function () {
+	describe('#createWriteStream', function() {
+		it('should encrypt the contents', function(done) {
       var efstream = efs.createWriteStream(writeStreamPath);
       efstream.write('hello world');
       efstream.end();
-      process.nextTick(efs.readFile.bind(this, writeStreamPath, 'utf8', this.callback));
-    },
+      process.nextTick(efs.readFile.bind(this, writeStreamPath, 'utf8', function(err, data) {
+				assert.isNull(err);
+				assert.equal(data, 'hello world');
+				done();
+			}));
+		});
 
-    'should encrypt the contents': function (data) {
-      assert.equal(data, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(writeStreamPath, done);
+		});
+	});
 
-    teardown: function() {
-      efs.unlink(writeStreamPath, this.callback);
-    }
-  },
-
-  '#open / #write / #close': {
-    topic: function () {
+	describe('#open / #write / #close', function() {
+		it('should encrypt the contents', function(done) {
       var fd;
       var self = this;
       efs.open(openWriteClosePath, 'w', '0666', onOpen);
 
       function onOpen(err, returnedFd) {
-        if (err) return self.callback(err);
+        if (err) return done(err);
         fd = returnedFd;
         var buff = new Buffer('hello world', 'utf8');
         efs.write(fd, buff, 0, buff.length, null, onWrite);
       }
 
       function onWrite(err) {
-        if (err) return self.callback(err);
+        if (err) return done(err);
         efs.close(fd, onClose);
       }
 
       function onClose(err) {
-        if (err) return self.callback(err);
-        efs.readFile(openWriteClosePath, self.callback);
+        if (err) return done(err);
+        efs.readFile(openWriteClosePath, verify);
       }
-    },
 
-    'should encrypt the contents': function (data) {
-      assert.equal(data, 'hello world');
-    },
+			function verify(err, data) {
+        if (err) return done(err);
+				assert.equal(data, 'hello world');
+				done();
+			}
+		});
 
-    teardown: function() {
-      efs.unlink(openWriteClosePath, this.callback);
-    }
-  },
+		afterEach(function(done) {
+      efs.unlink(openWriteClosePath, done);
+		});
+	});
 
-  '#openSync / #writeSync / #closeSync': {
-    topic: function () {
+	describe('#openSync / #writeSync / #closeSync', function() {
+		it('should encrypt the contents', function(done) {
       var buff = new Buffer('hello world', 'utf8');
-      var fd = efs.openSync(openWriteClosePath, 'w', '0666');
+      var fd = efs.openSync(openWriteClosePathSync, 'w', '0666');
       efs.writeSync(fd, buff, 0, buff.length, null);
       efs.closeSync(fd);
-      efs.readFile(openWriteClosePath, this.callback);
-    },
+      efs.readFile(openWriteClosePathSync, function(err, data) {
+				assert.equal(data, 'hello world');
+				done();
+			});
+		});
 
-    'should encrypt the contents': function (data) {
-      assert.equal(data, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(openWriteClosePathSync, done);
+		});
+	});
 
-    teardown: function() {
-      efs.unlink(openWriteClosePathSync, this.callback);
-    }
-  },
+	describe('#read', function() {
+		it('should return an error', function(done) {
+			efs.read(function(err, data) {
+				assert.isNotNull(err);
+				done();
+			});
+		});
+	});
 
-  '#read': {
-    topic: function () {
-      efs.read(this.callback);
-    },
+	describe('#read without callback', function() {
+		it('should throw an error', function() {
+			assert.throws(efs.read);
+		});
+	});
 
-    'should return an error': function (err, bytes) {
-      assert.isNotNull(err);
-    }
-  },
-
-  '#read without callback': {
-    'throws an error': function () {
-      assert.throws(efs.read);
-    }
-  },
-
-  '#readSync': {
-    'throws an error': function () {
+	describe('#read sync without an argument', function() {
+		it('should throw an eror', function() {
       assert.throws(efs.readSync);
-    }
-  },
+		});
+	});
 
-  '#appendFile': {
-    topic: function () {
+	describe('#appendFile', function() {
+		it('should properly append to an encrypted file', function(done) {
       var onAppend = function (err) {
-        if (err) {
-          return this.callback(err);
-        }
-        process.nextTick(efs.readFile.bind(this, appendFilePath, this.callback));
+        if (err) { return done(err); }
+        process.nextTick(efs.readFile.bind(this, appendFilePath, function(err, data) {
+					assert.equal(data, 'hello world');
+					done();
+				}));
       }.bind(this)
 
       efs.writeFileSync(appendFilePath, 'hello');
       efs.appendFile(appendFilePath, ' world', onAppend);
-    },
+		});
 
-    'should properly append to encrypted file': function (data) {
-      assert.equal(data, 'hello world');
-    },
+		afterEach(function(done) {
+      efs.unlink(appendFilePath, done);
+		});
+	});
 
-    teardown: function() {
-      efs.unlink(appendFilePath, this.callback);
-    }
-  },
-
-  '#appendFileSync': {
-    topic: function () {
+	describe('#appendFileSync', function() {
+		it('should properly append to an encrypted file', function() {
       efs.writeFileSync(appendFileSyncPath, 'hello');
       efs.appendFileSync(appendFileSyncPath, ' world');
-      efs.readFile(appendFileSyncPath, this.callback);
-    },
-
-    'should properly append to encrypted file': function (data) {
+      var data = efs.readFileSync(appendFileSyncPath);
       assert.equal(data, 'hello world');
-    },
+		});
 
-    teardown: function() {
-      efs.unlink(appendFileSyncPath, this.callback);
-    }
-  },
+		afterEach(function(done) {
+      efs.unlink(appendFileSyncPath, done);
+		});
+	});
 
-  '#truncate': {
-    topic: function () {
-      efs.truncate(this.callback);
-    },
+	describe('#truncate', function() {
+		it('should return an error', function(done) {
+      efs.truncate(function(err) {
+				assert.isNotNull(err);
+				done();
+			});
+		})
+	});
 
-    'should return an error': function (err, success) {
-      assert.isNotNull(err);
-    }
-  },
-
-  '#truncate without callback': {
-    'throws an error': function () {
+	describe('#truncate without callback', function() {
+		it('should throw an error', function() {
       assert.throws(efs.truncate);
-    }
-  },
+		});
+	});
 
-  '#truncateSync': {
-    'throws an error': function () {
+	describe('#truncateSync', function() {
+		it('should throw an error', function() {
       assert.throws(efs.truncateSync);
-    }
-  }
-}).export(module);
+		});
+	});
+});
 
-function ticks(num, func) {
-  if (num == 0) {
-    func();
-  } else {
-    process.nextTick(ticks.bind(this, num - 1, func));
-  }
-}
